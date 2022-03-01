@@ -21,9 +21,11 @@ import android.provider.SyncStateContract.Helpers.update
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Transformations
 import com.example.android.trackmysleepquality.database.SleepDatabase
 import com.example.android.trackmysleepquality.database.SleepDatabaseDao
 import com.example.android.trackmysleepquality.database.SleepNight
+import com.example.android.trackmysleepquality.formatNights
 import kotlinx.coroutines.*
 
 /**
@@ -35,6 +37,7 @@ class SleepTrackerViewModel(
 ) : AndroidViewModel(application) {
     private var viewModelJob = Job()
 
+
     override fun onCleared() {
         super.onCleared()
         viewModelJob.cancel()
@@ -42,7 +45,10 @@ class SleepTrackerViewModel(
 
     private val uiScope = CoroutineScope(Dispatchers.Main + viewModelJob)
     private var tonight = MutableLiveData<SleepNight?>()
-    private val night = database.getAllNight()
+    private val nights = database.getAllNight()
+    val nightsString = Transformations.map(nights) { nights ->
+        formatNights(nights, application.resources)
+    }
 
     init {
         initializeTonight()
@@ -66,7 +72,7 @@ class SleepTrackerViewModel(
         }
     }
 
-     fun onStartTracking() {
+    fun onStartTracking() {
         uiScope.launch {
             val newNight = SleepNight()
             insert(newNight)
@@ -82,7 +88,7 @@ class SleepTrackerViewModel(
         }
     }
 
-    fun someWorkNeedsToBeDone{
+    fun someWorkNeedsToBeDone() {
         uiScope.launch { suspendFunction() }
     }
 
@@ -110,16 +116,16 @@ class SleepTrackerViewModel(
             database.update(night)
         }
     }
-    fun onClear()
-    {
+
+    fun onClear() {
         uiScope.launch {
             crear()
             tonight.value = null
         }
     }
 
-    private suspend  fun crear() {
-        withContext(Dispatchers.IO  )
+    private suspend fun crear() {
+        withContext(Dispatchers.IO)
         {
             database.clear()
         }
